@@ -1,0 +1,19 @@
+# Ignore .env file
+config/.env
+
+# Ignore Go build artifacts
+/bin/
+/pkg/
+/build/
+
+# Ignore dependency directories
+/vendor/
+
+# Ignore IDE/editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore log files
+*.log
