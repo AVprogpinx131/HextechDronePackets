@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:17
+    container_name: hextech_drone_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: drones123
+      POSTGRES_DB: hextech_drone
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hextech_drone_backend
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: "postgresql://postgres:drones123@db:5433/hextech_drone"
+    ports:
+      - "8080:8080"
+    restart: always
+
+volumes:
+  pgdata:
