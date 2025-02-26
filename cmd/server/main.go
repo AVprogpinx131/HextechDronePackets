@@ -20,10 +20,15 @@ func main() {
     r.HandleFunc("/register", api.RegisterHandler).Methods("POST")
     r.HandleFunc("/login", api.LoginHandler).Methods("POST")
 
-    // Protected routes (require JWT token)
+    // Protected routes (require JWT token in Authorization header)
     protected := r.PathPrefix("/api").Subrouter()
     protected.Use(auth.JWTMiddleware)
     protected.HandleFunc("/protected", api.ProtectedHandler).Methods("GET")
+
+    // Territory routes
+    protected.HandleFunc("/territories", api.CreateTerritoryHandler).Methods("POST")
+    protected.HandleFunc("/territories", api.GetTerritoriesHandler).Methods("GET")
+    protected.HandleFunc("/territories/{id}", api.DeleteTerritoryHandler).Methods("DELETE")
 
     // Set up WebSocket handler
     r.HandleFunc("/ws", websocket.HandleWebSocket)
