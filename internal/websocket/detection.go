@@ -4,11 +4,12 @@ import (
     "hextech_interview_project/internal/models"
     "hextech_interview_project/internal/repository"
     "math"
+    "log"
 )
 
-// Check if a drone is inside a given territory using Haversine formula
+
 func IsDroneInsideTerritory(drone models.DronePacket, territory models.Territory) bool {
-    const EarthRadius = 6371000 // Earth radius in meters
+    const EarthRadius = 6371000
 
     dLat := (drone.Latitude - territory.Latitude) * (math.Pi / 180)
     dLon := (drone.Longitude - territory.Longitude) * (math.Pi / 180)
@@ -20,14 +21,17 @@ func IsDroneInsideTerritory(drone models.DronePacket, territory models.Territory
         math.Sin(dLon/2)*math.Sin(dLon/2)*math.Cos(lat1)*math.Cos(lat2)
     c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 
-    distance := EarthRadius * c // Distance in meters
+    distance := EarthRadius * c
 
-    return distance <= territory.Radius // Check if within radius
+    log.Printf("Distance from drone %s to territory %s: %.2f meters", drone.MAC, territory.Name, distance)
+    log.Printf("Territory radius: %.2f meters", territory.Radius)
+
+    return distance <= territory.Radius
 }
 
-// Check if a drone is inside any user's territory
+
 func CheckDroneInTerritories(drone models.DronePacket) []int {
-    territories, err := repository.GetAllTerritories() // Get all territories
+    territories, err := repository.GetAllTerritories()
     if err != nil {
         return nil
     }

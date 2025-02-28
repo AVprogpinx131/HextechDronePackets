@@ -8,23 +8,53 @@ import (
     "net/http"
 )
 
+
+var activeDrones = make(map[string]bool)
+
+
 // Handles incoming drone data from WebSocket
 func ProcessPacket(data []byte) {
     var packet models.DronePacket
 
-    // Decode the JSON payload
     err := json.Unmarshal(data, &packet)
     if err != nil {
         log.Println("Invalid packet:", err)
         return
     }
 
-    // Save packet to the database
+    territories, err := repository.GetAllTerritories()
+    if err != nil {
+        log.Println("Error fetching territories:", err)
+        return
+    }
+
+    log.Printf("Found %d territories in DB", len(territories))
+
+    insideAny := false
+    for _, territory := range territories {
+        log.Printf("Checking territory: %s (Lat: %f, Lon: %f, Radius: %f)", 
+            territory.Name, territory.Latitude, territory.Longitude, territory.Radius)
+        
+        if IsDroneInsideTerritory(packet, territory) {
+            insideAny = true
+            log.Printf("Drone %s is INSIDE territory: %s", packet.MAC, territory.Name)
+            break
+        }
+    }
+
+    if wasInside, exists := activeDrones[packet.MAC]; exists && wasInside && !insideAny {
+        log.Printf("Drone %s EXITED a territory!", packet.MAC)
+        repository.SaveExitEvent(packet.MAC)
+    }
+
+    activeDrones[packet.MAC] = insideAny
+
     err = repository.SavePacket(packet)
     if err != nil {
         log.Println("Error saving packet:", err)
     }
 }
+
 
 // Allows HTTP clients to send drone data
 func HandleDronePacket(w http.ResponseWriter, r *http.Request) {
