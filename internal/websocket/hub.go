@@ -5,46 +5,43 @@ import (
     "github.com/gorilla/websocket"
 )
 
-// Hub struct manages all WebSocket clients and messages
+// WebSocket Hub (tracks connected users)
 type Hub struct {
-    clients map[*websocket.Conn]bool // Active WebSocket connections
-    mutex   sync.Mutex               // Ensures thread safety
+    clients map[int]*websocket.Conn // Maps userID → WebSocket connection
+    mutex   sync.Mutex
 }
 
-// Create a global hub instance
 var hub = Hub{
-    clients: make(map[*websocket.Conn]bool),
+    clients: make(map[int]*websocket.Conn),
 }
 
-// RegisterClient adds a new WebSocket connection to the hub
-func RegisterClient(conn *websocket.Conn) {
+// Register a new WebSocket client (user)
+func RegisterClient(userID int, conn *websocket.Conn) {
     hub.mutex.Lock()
     defer hub.mutex.Unlock()
-    hub.clients[conn] = true
+    hub.clients[userID] = conn
 }
 
-// UnregisterClient removes a WebSocket connection from the hub
-func UnregisterClient(conn *websocket.Conn) {
+// Remove a WebSocket client when they disconnect
+func UnregisterClient(userID int) {
     hub.mutex.Lock()
     defer hub.mutex.Unlock()
-    delete(hub.clients, conn)
+    delete(hub.clients, userID)
 }
 
-// BroadcastMessage sends a message to all connected clients
-func BroadcastMessage(msg []byte) {
+// Send a message to a specific user
+func NotifyUser(userID int, message string) {
     hub.mutex.Lock()
     defer hub.mutex.Unlock()
 
-    for conn := range hub.clients {
-        err := conn.WriteMessage(websocket.TextMessage, msg)
-        if err != nil {
-            conn.Close()
-            delete(hub.clients, conn)
-        }
+    conn, exists := hub.clients[userID]
+    if !exists {
+        return // User not connected
     }
-}
 
-// NotifyUsers sends a message to all connected users
-func NotifyUsers(message string) {
-    BroadcastMessage([]byte(message))
+    err := conn.WriteMessage(websocket.TextMessage, []byte(message))
+    if err != nil {
+        conn.Close()
+        delete(hub.clients, userID) // Remove disconnected clients
+    }
 }
