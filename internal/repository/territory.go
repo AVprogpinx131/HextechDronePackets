@@ -74,7 +74,7 @@ func DeleteTerritory(userID, territoryID int) error {
             log.Printf("No territory found with ID: %d for user: %d", territoryID, userID)
             return errors.New("territory not found")
         }
-        log.Println("❌ Error deleting territory:", err)
+        log.Println("Error deleting territory:", err)
         return err
     }
 
