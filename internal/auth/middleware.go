@@ -7,6 +7,7 @@ import (
     "strings"
     "github.com/dgrijalva/jwt-go"
 	"hextech_interview_project/config"
+    "errors"
 )
 
 // Context key for storing user ID
@@ -58,4 +59,26 @@ func GetUserID(r *http.Request) (int, error) {
         return 0, fmt.Errorf("user ID not found in request context")
     }
     return userID, nil
+}
+
+
+// Extracts userID from a JWT token
+func ValidateToken(tokenString string) (int, error) {
+    claims := jwt.MapClaims{}
+
+    token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+        return config.JwtSecret, nil
+    })
+
+    if err != nil || !token.Valid {
+        return 0, errors.New("invalid token")
+    }
+
+    // Extract user ID from token
+    userIDFloat, ok := claims["user_id"].(float64)
+    if !ok {
+        return 0, errors.New("invalid token payload")
+    }
+
+    return int(userIDFloat), nil
 }
