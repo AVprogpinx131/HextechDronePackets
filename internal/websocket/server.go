@@ -1,10 +1,10 @@
 package websocket
 
 import (
-    "github.com/gorilla/websocket"
-    "io"
+    "hextech_interview_project/internal/auth"
     "log"
     "net/http"
+    "github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
@@ -13,34 +13,41 @@ var upgrader = websocket.Upgrader{
     },
 }
 
-// HandleWebSocket upgrades an HTTP request to a WebSocket connection
+// Handle WebSocket connections
 func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
+    log.Println("New WebSocket connection request")
+
     conn, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
-        http.Error(w, "Failed to upgrade to WebSocket", http.StatusInternalServerError)
+        log.Println("Failed to upgrade WebSocket:", err)
+        http.Error(w, "Failed to upgrade", http.StatusInternalServerError)
         return
     }
-    defer conn.Close()
 
-    RegisterClient(conn) // Register client in the hub
-    log.Println("New WebSocket client connected")
-
-    // Listen for messages
-    for {
-        _, message, err := conn.ReadMessage()
-        if err != nil {
-            if err == io.EOF {
-                log.Println("Client disconnected")
-            } else {
-                log.Println("Error reading message:", err)
-            }
-            break
-        }
-
-        NotifyUsers("Received message: " + string(message)) // Broadcast message
-
-        ProcessPacket(message) // Process the received packet
+    // Extract JWT token from query parameters
+    token := r.URL.Query().Get("token")
+    if token == "" {
+        log.Println("Missing token in WebSocket request")
+        conn.Close()
+        return
     }
 
-    UnregisterClient(conn) // Remove client when disconnected
+    log.Println("Token received:", token)
+
+    // Validate the token and get the user ID
+    userID, err := auth.ValidateToken(token)
+    if err != nil {
+        log.Println("Invalid token:", err)
+        conn.Close()
+        return
+    }
+
+    log.Println("User authenticated with ID:", userID)
+
+    // Register the user's WebSocket connection
+    RegisterClient(userID, conn)
+
+    log.Println("WebSocket connection established for user:", userID)
+
+    defer UnregisterClient(userID)
 }
