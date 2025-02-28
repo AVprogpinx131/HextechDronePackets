@@ -1,7 +1,7 @@
-# Use official Golang image as a build stage
+# Build stage
 FROM golang:1.18 AS builder
 
-# Set the working directory inside the container
+# Set the working directory
 WORKDIR /app
 
 # Copy go.mod and go.sum first to download dependencies
@@ -11,23 +11,20 @@ RUN go mod download
 # Copy the rest of the project files
 COPY . .
 
-# Build the Go binary
-RUN go build -o server cmd/server/main.go
+# Build the Go binary explicitly for Linux
+RUN GOOS=linux GOARCH=amd64 go build -o /app/server cmd/server/main.go
 
-# Use a lightweight Alpine image for the final container
+# Final image
 FROM alpine:latest
 
 # Install necessary system dependencies
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates libc6-compat
 
-# Set the working directory inside the container
-WORKDIR /root/
+# Set the working directory
+WORKDIR /
 
 # Copy the built binary from the builder stage
 COPY --from=builder /app/server /server
-
-# Copy .env file (optional, if using ENV variables)
-COPY config/.env .env
 
 # Expose the port the server runs on
 EXPOSE 8080

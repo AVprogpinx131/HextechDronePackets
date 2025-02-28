@@ -22,9 +22,11 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: "postgresql://postgres:drones123@db:5433/hextech_drone"
+      DATABASE_URL: "postgresql://postgres:drones123@db:5432/hextech_drone?sslmode=disable"
+    env_file:
+      - config/.env
     ports:
-      - "8080:8080"
+      - "8081:8080"
     restart: always
 
 volumes:
