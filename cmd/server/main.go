@@ -33,6 +33,9 @@ func main() {
     // Set up WebSocket handler
     r.HandleFunc("/ws", websocket.HandleWebSocket)
 
+    // Drone packet routes
+    protected.HandleFunc("/drone_packet", websocket.HandleDronePacket).Methods("POST")
+
     // Start HTTP server
     log.Println("Starting server on :8080")
     log.Fatal(http.ListenAndServe(":8080", r))
