@@ -14,11 +14,11 @@ var db *sql.DB
 
 func InitDB() {
     // Load configuration
-    co.LoadConfig()
+    config.LoadConfig()
 
     // Connect to PostgreSQL
     var err error
-    db, err = sql.Open("postgres", co.DbURL)
+    db, err = sql.Open("postgres", config.DbURL)
     if err != nil {
         log.Fatal("Failed to connect to database:", err)
     }
@@ -33,8 +33,8 @@ func InitDB() {
 }
 
 func SavePacket(packet models.DronePacket) error {
-	query := `INSERT INTO drone_packets (mac, lat, lon, altitude) VALUES ($1, $2, $3, $4)`
-	_, err := db.Exec(query, packet.MAC, packet.Lat, packet.Lon, packet.Altitude)
+	query := `INSERT INTO drone_packets (mac, latitude, longitude, altitude) VALUES ($1, $2, $3, $4)`
+	_, err := db.Exec(query, packet.MAC, packet.Latitude, packet.Longitude, packet.Altitude)
 	if err != nil {
         log.Println("Error inserting packet:", err)
     }
