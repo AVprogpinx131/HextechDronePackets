@@ -36,12 +36,12 @@ func NotifyUser(userID int, message string) {
 
     conn, exists := hub.clients[userID]
     if !exists {
-        return // User not connected
+        return
     }
 
     err := conn.WriteMessage(websocket.TextMessage, []byte(message))
     if err != nil {
         conn.Close()
-        delete(hub.clients, userID) // Remove disconnected clients
+        delete(hub.clients, userID)
     }
 }

@@ -9,7 +9,7 @@ import (
 
 
 func IsDroneInsideTerritory(drone models.DronePacket, territory models.Territory) bool {
-    const EarthRadius = 6371000
+    const EarthRadius = 6371000 
 
     dLat := (drone.Latitude - territory.Latitude) * (math.Pi / 180)
     dLon := (drone.Longitude - territory.Longitude) * (math.Pi / 180)
@@ -21,12 +21,18 @@ func IsDroneInsideTerritory(drone models.DronePacket, territory models.Territory
         math.Sin(dLon/2)*math.Sin(dLon/2)*math.Cos(lat1)*math.Cos(lat2)
     c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 
-    distance := EarthRadius * c
+    distance := EarthRadius * c 
 
     log.Printf("Distance from drone %s to territory %s: %.2f meters", drone.MAC, territory.Name, distance)
     log.Printf("Territory radius: %.2f meters", territory.Radius)
 
-    return distance <= territory.Radius
+    if distance <= territory.Radius {
+        log.Printf("Drone %s is INSIDE territory %s", drone.MAC, territory.Name)
+        return true
+    } else {
+        log.Printf("Drone %s is OUTSIDE territory %s", drone.MAC, territory.Name)
+        return false
+    }
 }
 
 
