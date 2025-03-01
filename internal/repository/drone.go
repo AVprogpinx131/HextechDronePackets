@@ -9,6 +9,19 @@ func SaveExitEvent(mac string) error {
     _, err := db.Exec(query, mac)
     if err != nil {
         log.Println("Error saving exit event:", err)
+    } else {
+        log.Printf("Saved exit event: MAC=%s", mac)
+    }
+    return err
+}
+
+func SaveDroneMovement(mac string, territoryId int, eventType string) error {
+    query := `INSERT INTO drone_movements (mac, territory_id, event_type) VALUES ($1, $2, $3)`
+    _, err := db.Exec(query, mac, territoryId, eventType)
+    if err != nil {
+        log.Println("Error saving drone movement:", err)
+    } else {
+        log.Printf("Saved drone movement: MAC=%s, Territory=%d, Event=%s", mac, territoryId, eventType)
     }
     return err
 }
