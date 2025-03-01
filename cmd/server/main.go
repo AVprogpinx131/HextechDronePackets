@@ -30,6 +30,9 @@ func main() {
     protected.HandleFunc("/territories", api.GetTerritoriesHandler).Methods("GET")
     protected.HandleFunc("/territories/{id}", api.DeleteTerritoryHandler).Methods("DELETE")
 
+    // Report routes
+    protected.HandleFunc("/reports", api.GetDroneMovements).Methods("GET")
+
     // Set up WebSocket handler
     r.HandleFunc("/ws", websocket.HandleWebSocket)
 
