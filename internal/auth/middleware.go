@@ -8,6 +8,7 @@ import (
     "github.com/dgrijalva/jwt-go"
 	"hextech_interview_project/config"
     "errors"
+    "log"
 )
 
 // Context key for storing user ID
@@ -19,9 +20,9 @@ const UserIDKey contextKey = "userID"
 func JWTMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         authHeader := r.Header.Get("Authorization")
-
         if authHeader == "" {
-            http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+            log.Println("Missing Authorization header")
+            http.Error(w, "Unauthorized: Missing Authorization header", http.StatusUnauthorized)
             return
         }
 
@@ -33,20 +34,23 @@ func JWTMiddleware(next http.Handler) http.Handler {
         })
 
         if err != nil || !token.Valid {
-            http.Error(w, "Invalid token", http.StatusUnauthorized)
+            log.Println("Invalid token:", err)
+            http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
             return
         }
 
         // Extract user ID from token
         userIDFloat, ok := claims["user_id"].(float64)
         if !ok {
-            http.Error(w, "Invalid token payload", http.StatusUnauthorized)
+            log.Println("Invalid token payload: user_id missing")
+            http.Error(w, "Unauthorized: Invalid token payload", http.StatusUnauthorized)
             return
         }
 
         userID := int(userIDFloat)
+        log.Printf("Authenticated user_id: %d", userID)
 
-        // Store user ID in request context
+        // Store user ID in request context using a proper key
         ctx := context.WithValue(r.Context(), UserIDKey, userID)
         next.ServeHTTP(w, r.WithContext(ctx))
     })
