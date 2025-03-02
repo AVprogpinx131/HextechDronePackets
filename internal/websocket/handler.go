@@ -9,7 +9,7 @@ import (
 )
 
 
-var activeDrones = make(map[string]int)
+var activeDrones = make(map[string][]int)
 
 
 // Handles incoming drone data from WebSocket
@@ -27,37 +27,47 @@ func ProcessPacket(data []byte) {
         return
     }
 
-    insideTerritoryID := 0
+    insideTerritories := []int{}
     for _, territory := range territories {
         if IsDroneInsideTerritory(packet, territory) {
-            insideTerritoryID = territory.ID
-            log.Printf("Drone %s is INSIDE territory %s (ID: %d)", packet.MAC, territory.Name, territory.ID)
-            break
+            insideTerritories = append(insideTerritories, territory.ID)
         }
     }
 
-    previousTerritoryID, exists := activeDrones[packet.MAC]
+    previousTerritories, exists := activeDrones[packet.MAC]
 
-    if !exists {
-        log.Printf("First detection of drone %s - setting initial state.", packet.MAC)
-        activeDrones[packet.MAC] = insideTerritoryID
-        if insideTerritoryID != 0 {
-            log.Printf("First detected INSIDE territory %d - recording ENTRY", insideTerritoryID)
-            repository.SaveDroneMovement(packet.MAC, insideTerritoryID, "entry")
+    if exists {
+        // Check for exits
+        for _, prevTerritory := range previousTerritories {
+            if !contains(insideTerritories, prevTerritory) {
+                log.Printf("Drone %s EXITED territory %d", packet.MAC, prevTerritory)
+                repository.SaveDroneMovement(packet.MAC, prevTerritory, "exit")
+                repository.SaveExitEvent(packet.MAC)
+            }
         }
-    } else {
-        if previousTerritoryID != 0 && insideTerritoryID == 0 {
-            log.Printf("Drone %s EXITED territory %d", packet.MAC, previousTerritoryID)
-            repository.SaveDroneMovement(packet.MAC, previousTerritoryID, "exit")
-            repository.SaveExitEvent(packet.MAC) 
-        } else if previousTerritoryID == 0 && insideTerritoryID != 0 {
-            log.Printf("Drone %s ENTERED territory %d", packet.MAC, insideTerritoryID)
-            repository.SaveDroneMovement(packet.MAC, insideTerritoryID, "entry")
+        
+        // Check for new entries
+        for _, newTerritory := range insideTerritories {
+            if !contains(previousTerritories, newTerritory) {
+                log.Printf("Drone %s ENTERED territory %d", packet.MAC, newTerritory)
+                repository.SaveDroneMovement(packet.MAC, newTerritory, "entry")
+            }
         }
     }
 
-    activeDrones[packet.MAC] = insideTerritoryID
+    activeDrones[packet.MAC] = insideTerritories
     repository.SavePacket(packet)
+}
+
+
+// Check if a value exists in a slice
+func contains(slice []int, value int) bool {
+    for _, v := range slice {
+        if v == value {
+            return true
+        }
+    }
+    return false
 }
 
 

@@ -14,4 +14,6 @@ type DroneMovement struct {
     TerritoryId  int     `json:"territory_id"`
     TerritoryName string `json:"territory_name"`
     Timestamp    string  `json:"timestamp"`
+    MinAltitude  float64 `json:"min_altitude"`
+    MaxAltitude  float64 `json:"max_altitude"`
 }
