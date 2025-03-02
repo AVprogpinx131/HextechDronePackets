@@ -49,5 +49,14 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
     log.Println("WebSocket connection established for user:", userID)
 
-    defer UnregisterClient(userID)
+    // Keep WebSocket connection open
+    for {
+        _, _, err := conn.ReadMessage()
+        if err != nil {
+            log.Printf("🔌 WebSocket disconnected: User %d", userID)
+            UnregisterClient(userID)
+            return
+        }
+    }
+
 }

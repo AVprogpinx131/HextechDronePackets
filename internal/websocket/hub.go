@@ -3,45 +3,94 @@ package websocket
 import (
     "sync"
     "github.com/gorilla/websocket"
+    "time"
+    "fmt"
+    "hextech_interview_project/internal/repository"
+    "log"
 )
 
-// WebSocket Hub (tracks connected users)
-type Hub struct {
-    clients map[int]*websocket.Conn // Maps userID → WebSocket connection
-    mutex   sync.Mutex
-}
+var (
+    userConnections = make(map[int]*websocket.Conn) // Map of userID → WebSocket connection
+    mutex           sync.Mutex
+)
 
-var hub = Hub{
-    clients: make(map[int]*websocket.Conn),
-}
 
 // Register a new WebSocket client (user)
 func RegisterClient(userID int, conn *websocket.Conn) {
-    hub.mutex.Lock()
-    defer hub.mutex.Unlock()
-    hub.clients[userID] = conn
+    mutex.Lock()
+    defer mutex.Unlock()
+    userConnections[userID] = conn
+
+    log.Printf("WebSocket client registered: User %d", userID)
 }
+
 
 // Remove a WebSocket client when they disconnect
 func UnregisterClient(userID int) {
-    hub.mutex.Lock()
-    defer hub.mutex.Unlock()
-    delete(hub.clients, userID)
+    mutex.Lock()
+    defer mutex.Unlock()
+    delete(userConnections, userID)
 }
+
 
 // Send a message to a specific user
 func NotifyUser(userID int, message string) {
-    hub.mutex.Lock()
-    defer hub.mutex.Unlock()
+    mutex.Lock()
+    conn, exists := userConnections[userID]
+    mutex.Unlock()
 
-    conn, exists := hub.clients[userID]
-    if !exists {
-        return
+    if exists {
+        conn.WriteMessage(websocket.TextMessage, []byte(message))
     }
+}
 
-    err := conn.WriteMessage(websocket.TextMessage, []byte(message))
-    if err != nil {
-        conn.Close()
-        delete(hub.clients, userID)
-    }
+
+// Periodic updates to send active drone information
+func StartPeriodicUpdates() {
+    go func() {
+        for {
+            time.Sleep(10 * time.Second)
+
+            log.Println("Running periodic drone updates...")
+
+            mutex.Lock()
+            log.Printf("Active WebSocket clients: %d", len(userConnections))
+
+            for userID, conn := range userConnections {
+                activeDrones, err := repository.GetDronesInsideTerritory(userID)
+                if err != nil {
+                    log.Println("Error fetching drones:", err)
+                    continue
+                }
+
+                if len(activeDrones) > 0 {
+                    log.Printf("Sending %d active drones to user %d", len(activeDrones), userID) 
+
+                    // Format drones as table for logging
+                    log.Println("Active Drones:")
+                    log.Println("+-------------------+-----------+-----------+---------+")
+                    log.Println("| MAC Address      | Latitude  | Longitude | Altitude|")
+                    log.Println("+-------------------+-----------+-----------+---------+")
+                    for _, d := range activeDrones {
+                        log.Printf("| %-17s | %-9.5f | %-9.5f | %-7.2f |", d.MAC, d.Latitude, d.Longitude, d.Altitude)
+                    }
+                    log.Println("+-------------------+-----------+-----------+---------+")
+
+                    // Send formatted message to WebSocket
+                    message := fmt.Sprintf("Active Drones (%d):\n", len(activeDrones))
+                    for _, d := range activeDrones {
+                        message += fmt.Sprintf("%s at (%.5f, %.5f) Alt: %.2f\n", d.MAC, d.Latitude, d.Longitude, d.Altitude)
+                    }
+
+                    err := conn.WriteMessage(websocket.TextMessage, []byte(message))
+                    if err != nil {
+                        log.Println("Error sending message:", err)
+                        conn.Close()
+                        delete(userConnections, userID)
+                    }
+                }
+            }
+            mutex.Unlock()
+        }
+    }()
 }

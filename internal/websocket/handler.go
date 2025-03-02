@@ -6,6 +6,7 @@ import (
     "hextech_interview_project/internal/repository"
     "log"
     "net/http"
+    "fmt"
 )
 
 
@@ -51,6 +52,13 @@ func ProcessPacket(data []byte) {
             if !contains(previousTerritories, newTerritory) {
                 log.Printf("Drone %s ENTERED territory %d", packet.MAC, newTerritory)
                 repository.SaveDroneMovement(packet.MAC, newTerritory, "entry")
+
+                // Notify the territory owner
+                ownerID, err := repository.GetTerritoryOwner(newTerritory)
+                if err == nil {
+                    message := fmt.Sprintf("Drone %s entered your territory %d", packet.MAC, newTerritory)
+                    NotifyUser(ownerID, message)
+                }
             }
         }
     }

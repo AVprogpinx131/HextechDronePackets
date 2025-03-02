@@ -5,6 +5,7 @@ import (
     "log"
     "errors"
     "database/sql"
+    "fmt"
 )
 
 // Create a new territory
@@ -62,6 +63,58 @@ func GetAllTerritories() ([]models.Territory, error) {
         territories = append(territories, t)
     }
     return territories, nil
+}
+
+
+// Get all distinct drone packets currently inside a user's territories
+func GetDronesInsideTerritory(userID int) ([]models.DronePacket, error) {
+    query := `
+        SELECT DISTINCT ON (dp.mac, dp.latitude, dp.longitude, dp.altitude) 
+            dp.mac, dp.latitude, dp.longitude, dp.altitude
+        FROM drone_packets dp
+        JOIN territories t ON (
+            dp.latitude BETWEEN t.latitude - (t.radius / 111111) AND t.latitude + (t.radius / 111111)
+            AND dp.longitude BETWEEN t.longitude - (t.radius / (111111 * COS(RADIANS(t.latitude)))) 
+            AND dp.longitude + (t.radius / (111111 * COS(RADIANS(t.latitude))))
+            AND dp.altitude BETWEEN t.min_altitude AND t.max_altitude
+        )
+        WHERE t.user_id = $1
+    `
+    rows, err := db.Query(query, userID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    uniqueDrones := make(map[string]models.DronePacket)
+    for rows.Next() {
+        var drone models.DronePacket
+        err := rows.Scan(&drone.MAC, &drone.Latitude, &drone.Longitude, &drone.Altitude)
+        if err != nil {
+            return nil, err
+        }
+
+        key := fmt.Sprintf("%s-%f-%f-%f", drone.MAC, drone.Latitude, drone.Longitude, drone.Altitude)
+        uniqueDrones[key] = drone
+    }
+
+    var drones []models.DronePacket
+    for _, drone := range uniqueDrones {
+        drones = append(drones, drone)
+    }
+    return drones, nil
+}
+
+
+// Get a territory by ID
+func GetTerritoryOwner(territoryId int) (int, error) {
+    query := `SELECT user_id FROM territories WHERE id = $1`
+    var userId int
+    err := db.QueryRow(query, territoryId).Scan(&userId)
+    if err != nil {
+        return 0, err
+    }
+    return userId, nil
 }
 
 
