@@ -6,7 +6,7 @@ import (
     "hextech_interview_project/config"
 )
 
-// GenerateJWT creates a new token for the user
+// Creates a new token for the user
 func GenerateJWT(userID int) (string, error) {
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
         "user_id": userID,

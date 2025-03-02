@@ -7,6 +7,8 @@ type Territory struct {
     Latitude  float64  `json:"latitude"`
     Longitude float64  `json:"longitude"`
     Radius    float64  `json:"radius"` // Defines area size in meters
+    MinAltitude float64 `json:"min_altitude"`
+    MaxAltitude float64 `json:"max_altitude"`
 }
 
 type TerritoryRequest struct {
@@ -14,4 +16,6 @@ type TerritoryRequest struct {
     Latitude  float64 `json:"latitude"`
     Longitude float64 `json:"longitude"`
     Radius    float64 `json:"radius"`
+    MinAltitude float64 `json:"min_altitude"`
+    MaxAltitude float64 `json:"max_altitude"`
 }

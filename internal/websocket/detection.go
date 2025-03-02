@@ -23,10 +23,14 @@ func IsDroneInsideTerritory(drone models.DronePacket, territory models.Territory
 
     distance := EarthRadius * c 
 
+    altitudeInside := (drone.Altitude >= territory.MinAltitude) && (drone.Altitude <= territory.MaxAltitude)
+
     log.Printf("Distance from drone %s to territory %s: %.2f meters", drone.MAC, territory.Name, distance)
     log.Printf("Territory radius: %.2f meters", territory.Radius)
+    log.Printf("Altitude check: drone altitude=%.2f, min=%.2f, max=%.2f, inside=%t",
+        drone.Altitude, territory.MinAltitude, territory.MaxAltitude, altitudeInside)
 
-    if distance <= territory.Radius {
+    if distance <= territory.Radius && altitudeInside {
         log.Printf("Drone %s is INSIDE territory %s", drone.MAC, territory.Name)
         return true
     } else {

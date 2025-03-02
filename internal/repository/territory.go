@@ -8,13 +8,15 @@ import (
 )
 
 // Create a new territory
-func CreateTerritory(userID int, name string, lat, lon, radius float64) error {
-    query := `INSERT INTO territories (user_id, name, latitude, longitude, radius) VALUES ($1, $2, $3, $4, $5)`
-    _, err := db.Exec(query, userID, name, lat, lon, radius)
+func CreateTerritory(territory models.Territory) error {
+    query := `INSERT INTO territories (user_id, name, latitude, longitude, radius, min_altitude, max_altitude) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+    _, err := db.Exec(query, territory.UserID, territory.Name, territory.Latitude, territory.Longitude, territory.Radius, territory.MinAltitude, territory.MaxAltitude)
     if err != nil {
         log.Println("Error creating territory:", err)
     } else {
-        log.Println("Territory created for user:", userID)
+        log.Printf("Territory created: %s (Lat: %.6f, Lon: %.6f, Radius: %.2f, Alt: %.2f - %.2f)",
+            territory.Name, territory.Latitude, territory.Longitude, territory.Radius,
+            territory.MinAltitude, territory.MaxAltitude)
     }
     return err
 }
@@ -53,7 +55,7 @@ func GetAllTerritories() ([]models.Territory, error) {
     var territories []models.Territory
     for rows.Next() {
         var t models.Territory
-        err := rows.Scan(&t.ID, &t.UserID, &t.Name, &t.Latitude, &t.Longitude, &t.Radius)
+        err := rows.Scan(&t.ID, &t.UserID, &t.Name, &t.Latitude, &t.Longitude, &t.Radius, &t.MinAltitude, &t.MaxAltitude)
         if err != nil {
             return nil, err
         }

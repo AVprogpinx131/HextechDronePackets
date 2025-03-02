@@ -24,7 +24,22 @@ func CreateTerritoryHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    err = repository.CreateTerritory(userID, req.Name, req.Latitude, req.Longitude, req.Radius)
+    // Validate input
+    if req.Radius <= 0 || req.MaxAltitude < req.MinAltitude {
+        http.Error(w, "Invalid radius or altitude range", http.StatusBadRequest)
+        return
+    }
+
+    err = repository.CreateTerritory(models.Territory{
+        UserID:       userID,
+        Name:         req.Name,
+        Latitude:     req.Latitude,
+        Longitude:    req.Longitude,
+        Radius:       req.Radius,
+        MinAltitude:  req.MinAltitude,
+        MaxAltitude:  req.MaxAltitude,
+    })
+
     if err != nil {
         http.Error(w, "Failed to create territory", http.StatusInternalServerError)
         return
