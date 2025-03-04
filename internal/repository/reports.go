@@ -3,9 +3,10 @@ package repository
 import (
     "hextech_interview_project/internal/models"
     "log"
+    "database/sql"
 )
 
-func GetMovementsByUser(userID int) ([]models.DroneMovement, error) {
+func GetMovementsByUser(db *sql.DB, userID int) ([]models.DroneMovement, error) {
     query := `
     SELECT dm.id, dm.mac, dm.event_type, dm.territory_id, t.name AS territory_name, dm.timestamp, t.min_altitude, t.max_altitude
     FROM drone_movements dm

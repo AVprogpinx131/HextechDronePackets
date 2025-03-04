@@ -5,6 +5,7 @@ import (
     "hextech_interview_project/internal/repository"
     "math"
     "log"
+    "database/sql"
 )
 
 
@@ -40,8 +41,8 @@ func IsDroneInsideTerritory(drone models.DronePacket, territory models.Territory
 }
 
 
-func CheckDroneInTerritories(drone models.DronePacket) []int {
-    territories, err := repository.GetAllTerritories()
+func CheckDroneInTerritories(db *sql.DB, drone models.DronePacket) []int {
+    territories, err := repository.GetAllTerritories(db)
     if err != nil {
         return nil
     }

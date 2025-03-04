@@ -7,6 +7,7 @@ import (
     "log"
     "net/http"
     "fmt"
+    "database/sql"
 )
 
 
@@ -14,7 +15,7 @@ var activeDrones = make(map[string][]int)
 
 
 // Handles incoming drone data from WebSocket
-func ProcessPacket(data []byte) {
+func ProcessPacket(db *sql.DB, data []byte) {
     var packet models.DronePacket
     err := json.Unmarshal(data, &packet)
     if err != nil {
@@ -22,7 +23,7 @@ func ProcessPacket(data []byte) {
         return
     }
 
-    territories, err := repository.GetAllTerritories()
+    territories, err := repository.GetAllTerritories(db)
     if err != nil {
         log.Println("Error fetching territories:", err)
         return
@@ -42,8 +43,8 @@ func ProcessPacket(data []byte) {
         for _, prevTerritory := range previousTerritories {
             if !contains(insideTerritories, prevTerritory) {
                 log.Printf("Drone %s EXITED territory %d", packet.MAC, prevTerritory)
-                repository.SaveDroneMovement(packet.MAC, prevTerritory, "exit")
-                repository.SaveExitEvent(packet.MAC)
+                repository.SaveDroneMovement(db, packet.MAC, prevTerritory, "exit")
+                repository.SaveExitEvent(db, packet.MAC)
             }
         }
         
@@ -51,10 +52,10 @@ func ProcessPacket(data []byte) {
         for _, newTerritory := range insideTerritories {
             if !contains(previousTerritories, newTerritory) {
                 log.Printf("Drone %s ENTERED territory %d", packet.MAC, newTerritory)
-                repository.SaveDroneMovement(packet.MAC, newTerritory, "entry")
+                repository.SaveDroneMovement(db, packet.MAC, newTerritory, "entry")
 
                 // Notify the territory owner
-                ownerID, err := repository.GetTerritoryOwner(newTerritory)
+                ownerID, err := repository.GetTerritoryOwner(db, newTerritory)
                 if err == nil {
                     message := fmt.Sprintf("Drone %s entered your territory %d", packet.MAC, newTerritory)
                     NotifyUser(ownerID, message)
@@ -64,7 +65,7 @@ func ProcessPacket(data []byte) {
     }
 
     activeDrones[packet.MAC] = insideTerritories
-    repository.SavePacket(packet)
+    repository.SavePacket(db, packet)
 }
 
 
@@ -80,7 +81,7 @@ func contains(slice []int, value int) bool {
 
 
 // Allows HTTP clients to send drone data
-func HandleDronePacket(w http.ResponseWriter, r *http.Request) {
+func HandleDronePacket(db *sql.DB, w http.ResponseWriter, r *http.Request) {
     var packet models.DronePacket
 
     // Decode JSON body
@@ -92,7 +93,7 @@ func HandleDronePacket(w http.ResponseWriter, r *http.Request) {
 
     // Reuse ProcessPacket logic
     jsonData, _ := json.Marshal(packet)
-    ProcessPacket(jsonData)
+    ProcessPacket(db, jsonData)
 
     // Respond with success
     w.WriteHeader(http.StatusOK)

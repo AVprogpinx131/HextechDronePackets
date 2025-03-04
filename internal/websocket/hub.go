@@ -1,12 +1,13 @@
 package websocket
 
 import (
-    "sync"
-    "github.com/gorilla/websocket"
-    "time"
-    "fmt"
-    "hextech_interview_project/internal/repository"
-    "log"
+	"database/sql"
+	"fmt"
+	"hextech_interview_project/internal/repository"
+	"log"
+	"sync"
+	"time"
+	"github.com/gorilla/websocket"
 )
 
 var (
@@ -46,7 +47,7 @@ func NotifyUser(userID int, message string) {
 
 
 // Periodic updates to send active drone information
-func StartPeriodicUpdates() {
+func StartPeriodicUpdates(db *sql.DB) {
     go func() {
         for {
             time.Sleep(10 * time.Second)
@@ -57,7 +58,7 @@ func StartPeriodicUpdates() {
             log.Printf("Active WebSocket clients: %d", len(userConnections))
 
             for userID, conn := range userConnections {
-                activeDrones, err := repository.GetDronesInsideTerritory(userID)
+                activeDrones, err := repository.GetDronesInsideTerritory(db, userID)
                 if err != nil {
                     log.Println("Error fetching drones:", err)
                     continue
