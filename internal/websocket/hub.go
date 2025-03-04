@@ -11,12 +11,12 @@ import (
 )
 
 var (
-    userConnections = make(map[int]*websocket.Conn) // Map of userID → WebSocket connection
+    userConnections = make(map[int]*websocket.Conn)
     mutex           sync.Mutex
 )
 
 
-// Register a new WebSocket client (user)
+// Register a new WebSocket client
 func RegisterClient(userID int, conn *websocket.Conn) {
     mutex.Lock()
     defer mutex.Unlock()

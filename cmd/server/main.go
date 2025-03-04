@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-    // Initialize PostgreSQL database
     db, err := repository.InitDB()
     if err != nil {
         log.Fatalf("Failed to initialize database: %v", err)
@@ -49,13 +48,13 @@ func main() {
         api.GetDroneMovements(db, w, r)
     }).Methods("GET")
 
-    // Set up WebSocket handler
-    r.HandleFunc("/ws", websocket.HandleWebSocket)
-
     // Drone packet routes
     protected.HandleFunc("/drone_packet", func(w http.ResponseWriter, r *http.Request) {
         websocket.HandleDronePacket(db, w, r)
     }).Methods("POST")
+
+    // Set up WebSocket handler
+    r.HandleFunc("/ws", websocket.HandleWebSocket)
 
     // Start periodic WebSocket updates
     websocket.StartPeriodicUpdates(db)

@@ -53,7 +53,6 @@ func LoginHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Log successful login
     log.Println("User logged in successfully:", creds.Username)
 
     json.NewEncoder(w).Encode(map[string]string{"token": token})

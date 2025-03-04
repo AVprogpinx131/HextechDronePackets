@@ -6,7 +6,6 @@ import (
     "net/http"
 )
 
-// Protected handler that requires authentication
 func ProtectedHandler(w http.ResponseWriter, r *http.Request) {
     userID, err := auth.GetUserID(r)
     if err != nil {

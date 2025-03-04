@@ -11,7 +11,6 @@ import (
     "log"
 )
 
-// Context key for storing user ID
 type contextKey string
 
 const UserIDKey contextKey = "userID"
@@ -66,7 +65,7 @@ func GetUserID(r *http.Request) (int, error) {
 }
 
 
-// Extracts userID from a JWT token
+// Extracts user ID from a JWT token
 func ValidateToken(tokenString string) (int, error) {
     claims := jwt.MapClaims{}
 
@@ -78,7 +77,6 @@ func ValidateToken(tokenString string) (int, error) {
         return 0, errors.New("invalid token")
     }
 
-    // Extract user ID from token
     userIDFloat, ok := claims["user_id"].(float64)
     if !ok {
         return 0, errors.New("invalid token payload")

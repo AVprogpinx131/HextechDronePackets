@@ -44,7 +44,6 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
     log.Println("User authenticated with ID:", userID)
 
-    // Register the user's WebSocket connection
     RegisterClient(userID, conn)
 
     log.Println("WebSocket connection established for user:", userID)
