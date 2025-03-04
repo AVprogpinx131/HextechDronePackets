@@ -7,10 +7,11 @@ import (
 	"hextech_interview_project/internal/repository"
 	"log"
 	"net/http"
+	"database/sql"
 )
 
 // Register a new user
-func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+func RegisterHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
     var creds models.Credentials
     err := json.NewDecoder(r.Body).Decode(&creds)
     if err != nil {
@@ -18,7 +19,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    err = repository.RegisterUser(creds.Username, creds.Password)
+    err = repository.RegisterUser(db, creds.Username, creds.Password)
     if err != nil {
         http.Error(w, "User already exists", http.StatusConflict)
         return
@@ -29,7 +30,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Login and get JWT token
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
+func LoginHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
     var creds models.Credentials
     err := json.NewDecoder(r.Body).Decode(&creds)
     if err != nil {
@@ -38,7 +39,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    userID, err := repository.AuthenticateUser(creds.Username, creds.Password)
+    userID, err := repository.AuthenticateUser(db, creds.Username, creds.Password)
     if err != nil {
         http.Error(w, "Invalid credentials", http.StatusUnauthorized)
         log.Println("Invalid credentials for user:", creds.Username, "-", err)

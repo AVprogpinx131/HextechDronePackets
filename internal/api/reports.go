@@ -6,10 +6,11 @@ import (
 	"hextech_interview_project/internal/auth"
     "net/http"
     "log"
+    "database/sql"
 )
 
 
-func GetDroneMovements(w http.ResponseWriter, r *http.Request) {
+func GetDroneMovements(db *sql.DB, w http.ResponseWriter, r *http.Request) {
     userIDRaw := r.Context().Value(auth.UserIDKey) 
 
     // Ensure userID is correctly retrieved
@@ -22,7 +23,7 @@ func GetDroneMovements(w http.ResponseWriter, r *http.Request) {
 
     log.Printf("Fetching reports for user_id: %d", userID)
 
-    movements, err := repository.GetMovementsByUser(userID)
+    movements, err := repository.GetMovementsByUser(db, userID)
     if err != nil {
         log.Println("Failed to fetch reports:", err)
         http.Error(w, "Failed to fetch reports", http.StatusInternalServerError)

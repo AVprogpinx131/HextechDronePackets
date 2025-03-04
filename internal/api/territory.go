@@ -8,10 +8,11 @@ import (
     "strconv"
     "github.com/gorilla/mux"
 	"hextech_interview_project/internal/models"
+    "database/sql"
 )
 
 // Create a new territory
-func CreateTerritoryHandler(w http.ResponseWriter, r *http.Request) {
+func CreateTerritoryHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
     userID, err := auth.GetUserID(r)
     if err != nil {
         http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -30,7 +31,7 @@ func CreateTerritoryHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    err = repository.CreateTerritory(models.Territory{
+    err = repository.CreateTerritory(db, models.Territory{
         UserID:       userID,
         Name:         req.Name,
         Latitude:     req.Latitude,
@@ -50,14 +51,14 @@ func CreateTerritoryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get all territories for a user
-func GetTerritoriesHandler(w http.ResponseWriter, r *http.Request) {
+func GetTerritoriesHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
     userID, err := auth.GetUserID(r)
     if err != nil {
         http.Error(w, "Unauthorized", http.StatusUnauthorized)
         return
     }
 
-    territories, err := repository.GetTerritories(userID)
+    territories, err := repository.GetTerritories(db, userID)
     if err != nil {
         http.Error(w, "Failed to fetch territories", http.StatusInternalServerError)
         return
@@ -67,7 +68,7 @@ func GetTerritoriesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Delete a territory
-func DeleteTerritoryHandler(w http.ResponseWriter, r *http.Request) {
+func DeleteTerritoryHandler(db *sql.DB, w http.ResponseWriter, r *http.Request) {
     userID, err := auth.GetUserID(r)
     if err != nil {
         http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -81,7 +82,7 @@ func DeleteTerritoryHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    err = repository.DeleteTerritory(userID, territoryID)
+    err = repository.DeleteTerritory(db, userID, territoryID)
     if err != nil {
         http.Error(w, "Failed to delete territory", http.StatusInternalServerError)
         return
