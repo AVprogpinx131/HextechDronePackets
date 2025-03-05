@@ -65,42 +65,41 @@ func GetAllTerritories(db *sql.DB) ([]models.Territory, error) {
 }
 
 // Get all distinct drone packets currently inside a user's territories
-func GetDronesInsideTerritory(db *sql.DB, userID int) ([]models.DronePacket, error) {
-	query := `
+func GetDronesInsideTerritory(db *sql.DB, userID int) ([]models.DroneInTerritory, error) {
+    query := `
         SELECT DISTINCT ON (dp.mac, dp.latitude, dp.longitude, dp.altitude) 
-            dp.mac, dp.latitude, dp.longitude, dp.altitude
+            dp.mac, dp.latitude, dp.longitude, dp.altitude, t.name
         FROM drone_packets dp
         JOIN territories t ON (
             dp.latitude BETWEEN t.latitude - (t.radius / 111111) AND t.latitude + (t.radius / 111111)
             AND dp.longitude BETWEEN t.longitude - (t.radius / (111111 * COS(RADIANS(t.latitude)))) 
-            AND dp.longitude + (t.radius / (111111 * COS(RADIANS(t.latitude))))
+            AND t.longitude + (t.radius / (111111 * COS(RADIANS(t.latitude))))
             AND dp.altitude BETWEEN t.min_altitude AND t.max_altitude
         )
         WHERE t.user_id = $1
     `
-	rows, err := db.Query(query, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+    rows, err := db.Query(query, userID)
+    if err != nil {
+        return nil, fmt.Errorf("failed to query drones: %v", err)
+    }
+    defer rows.Close()
 
-	uniqueDrones := make(map[string]models.DronePacket)
-	for rows.Next() {
-		var drone models.DronePacket
-		err := rows.Scan(&drone.MAC, &drone.Latitude, &drone.Longitude, &drone.Altitude)
-		if err != nil {
-			return nil, err
-		}
+    uniqueDrones := make(map[string]models.DroneInTerritory)
+    for rows.Next() {
+        var drone models.DroneInTerritory
+        err := rows.Scan(&drone.MAC, &drone.Latitude, &drone.Longitude, &drone.Altitude, &drone.TerritoryName)
+        if err != nil {
+            return nil, fmt.Errorf("failed to scan drone: %v", err)
+        }
+        key := fmt.Sprintf("%s-%f-%f-%f", drone.MAC, drone.Latitude, drone.Longitude, drone.Altitude)
+        uniqueDrones[key] = drone
+    }
 
-		key := fmt.Sprintf("%s-%f-%f-%f", drone.MAC, drone.Latitude, drone.Longitude, drone.Altitude)
-		uniqueDrones[key] = drone
-	}
-
-	var drones []models.DronePacket
-	for _, drone := range uniqueDrones {
-		drones = append(drones, drone)
-	}
-	return drones, nil
+    var drones []models.DroneInTerritory
+    for _, drone := range uniqueDrones {
+        drones = append(drones, drone)
+    }
+    return drones, nil
 }
 
 // Get a territory by ID
