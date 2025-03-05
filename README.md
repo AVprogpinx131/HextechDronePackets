@@ -69,7 +69,7 @@ curl -X POST http://localhost:8080/login
 ```bash
 curl -X POST http://localhost:8080/api/drone_packet
 -H "Content-Type: application/json"
--H "Authorization: <jwt-token>"
+-H "Authorization: Bearer <jwt-token>"
 -d '{"mac": "AA:BB:CC:DD:EE:FF", "latitude": 40.122, "longitude": 24.237, "altitude": 700}'
 ```
 
@@ -87,7 +87,7 @@ curl -X POST http://localhost:8080/api/territories
 ```bash
 curl -X GET http://localhost:8080/api/territories
 -H "Content-Type: application/json" 
--H "Authorization: <jwt-token>"
+-H "Authorization: Bearer <jwt-token>"
 ```
 
 **Delete**: Remove a specific territory by ID.
