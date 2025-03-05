@@ -17,6 +17,49 @@ func main() {
         log.Fatalf("Failed to initialize database: %v", err)
     }
 
+    // Initialize schema
+    _, err = db.Exec(`
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS territories (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id),
+            name TEXT NOT NULL,
+            latitude DOUBLE PRECISION NOT NULL,
+            longitude DOUBLE PRECISION NOT NULL,
+            radius DOUBLE PRECISION NOT NULL,
+            min_altitude DOUBLE PRECISION NOT NULL,
+            max_altitude DOUBLE PRECISION NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS drone_packets (
+            mac TEXT,
+            latitude DOUBLE PRECISION,
+            longitude DOUBLE PRECISION,
+            altitude DOUBLE PRECISION
+        );
+        CREATE TABLE IF NOT EXISTS drone_exits (
+            id SERIAL PRIMARY KEY,
+            mac TEXT,
+            exit_time TIMESTAMP WITH TIME ZONE
+        );
+        CREATE TABLE IF NOT EXISTS drone_movements (
+            id SERIAL PRIMARY KEY,
+            mac TEXT,
+            territory_id INTEGER REFERENCES territories(id),
+            event_type TEXT,
+            timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+    `)
+
+    if err != nil {
+        log.Fatal("Failed to initialize schema:", err)
+    }
+    log.Println("Database schema initialized")
+
+
     r := mux.NewRouter() 
 
     // Public routes (no JWT token required)
@@ -54,10 +97,9 @@ func main() {
     }).Methods("POST")
 
     // Set up WebSocket handler
-    r.HandleFunc("/ws", websocket.HandleWebSocket)
-
-    // Start periodic WebSocket updates
-    websocket.StartPeriodicUpdates(db)
+    r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+        websocket.HandleWebSocket(db, w, r)
+    })
 
     // Start HTTP server
     log.Println("Starting server on :8080")
