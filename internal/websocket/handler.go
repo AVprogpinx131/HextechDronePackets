@@ -58,7 +58,7 @@ func ProcessPacket(db *sql.DB, data []byte) {
                 ownerID, err := repository.GetTerritoryOwner(db, newTerritory)
                 if err == nil {
                     message := fmt.Sprintf("Drone %s entered your territory %d", packet.MAC, newTerritory)
-                    NotifyUser(ownerID, message)
+                    NotifyUser(ownerID, []byte(message))
                 }
             }
         }
